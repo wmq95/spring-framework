@@ -190,6 +190,7 @@ class ConfigurationClassParser {
 			}
 		}
 
+		// 回调ImportSelector
 		this.deferredImportSelectorHandler.process();
 	}
 
@@ -223,6 +224,8 @@ class ConfigurationClassParser {
 
 
 	protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
+		// 处理@Conditional
+		// conditionEvaluator 配合使用condition match 方法判
 		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
 			return;
 		}
@@ -247,6 +250,7 @@ class ConfigurationClassParser {
 		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass, filter);
 		do {
+			// 真正解析的核心
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
 		}
 		while (sourceClass != null);
@@ -284,7 +288,7 @@ class ConfigurationClassParser {
 						"]. Reason: Environment must implement ConfigurableEnvironment");
 			}
 		}
-
+		//处理配置类上得包扫描路径
 		// Process any @ComponentScan annotations
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
@@ -292,6 +296,7 @@ class ConfigurationClassParser {
 				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
 			for (AnnotationAttributes componentScan : componentScans) {
 				// The config class is annotated with @ComponentScan -> perform the scan immediately
+				// 交给componentScanParser 获取BeanDefinition
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
@@ -308,6 +313,11 @@ class ConfigurationClassParser {
 		}
 
 		// Process any @Import annotations
+		/**
+		 * 这儿也是SpringBoot 能起作用的地方
+		 * 因为Springboot 各种AutoConfiguration 中使用了@Import 和@ImportSelector
+		 * 在这儿被Spring 读取 识别到 然后进入他们的注册Bean的逻辑
+		 */
 		processImports(configClass, sourceClass, getImports(sourceClass), filter, true);
 
 		// Process any @ImportResource annotations
@@ -578,8 +588,10 @@ class ConfigurationClassParser {
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {
+							// 调用他们的selectImports
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames, exclusionFilter);
+							// 递归调用
 							processImports(configClass, currentSourceClass, importSourceClasses, exclusionFilter, false);
 						}
 					}

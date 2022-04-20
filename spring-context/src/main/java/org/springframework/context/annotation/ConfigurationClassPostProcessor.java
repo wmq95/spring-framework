@@ -243,7 +243,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					"postProcessBeanFactory already called on this post-processor against " + registry);
 		}
 		this.registriesPostProcessed.add(registryId);
-
+		// 处理基于注解配置的类
 		processConfigBeanDefinitions(registry);
 	}
 
@@ -275,6 +275,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+		// 获取所有的Bean 到这儿 应该只有Spring 内置的Bean 和一开始的配置类
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		for (String beanName : candidateNames) {
@@ -328,6 +329,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
 			StartupStep processConfig = this.applicationStartup.start("spring.context.config-classes.parse");
+			// 解析 这儿会先经过包扫描 扫描出所有需要的组件
 			parser.parse(candidates);
 			parser.validate();
 
@@ -340,7 +342,16 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			/**
+			 * 注册Bean定义 这儿去注册BeanDefinition  -对应哪些@Configuration注解得类
+			 * 如果@Component 注解得类 在@Configuration被@Bean被注解 那么就会被覆盖
+			 * 原先BeanDefinitionMap中 包扫描路径下得类型为ScannedGenericBeanDefinition
+			 * 经过对Configuration类解析之后变为了ConfigurationClassBeanDefinition
+			 * {@link ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsForBeanMethod}
+			 * 改方法里面有对应逻辑
+			 */
 			this.reader.loadBeanDefinitions(configClasses);
+
 			alreadyParsed.addAll(configClasses);
 			processConfig.tag("classCount", () -> String.valueOf(configClasses.size())).end();
 

@@ -33,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.TargetSource;
+import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
 import org.springframework.aop.framework.AopInfrastructureBean;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.framework.ProxyProcessorSupport;
@@ -250,6 +251,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
+			/**
+			 * 关注 shouldSkip 方法 但是要注意类得继承关系
+			 * #{@link AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors()}
+			 */
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
@@ -288,6 +293,12 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				/**
+				 * 如果需要 创建代理
+				 * wrapIfNecessary 一共就2处调用
+				 * 另一处 #{@link org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#getEarlyBeanReference}
+				 * 里面也会进入到 本类得#{@link this#getEarlyBeanReference}
+				 */
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -335,6 +346,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
+		// 创建代理的核心 这个方法所有Bean 都会进入
 		// Create proxy if we have advice.
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {

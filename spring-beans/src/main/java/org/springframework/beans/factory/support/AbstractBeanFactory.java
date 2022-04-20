@@ -296,6 +296,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 			}
 
+			// Spring 最后一步创建所有的Bean  typeCheckOnly 为false
 			if (!typeCheckOnly) {
 				markBeanAsCreated(beanName);
 			}
@@ -306,11 +307,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				if (requiredType != null) {
 					beanCreation.tag("beanType", requiredType::toString);
 				}
+				// 获取合并的BeanDefinition
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 检验BeanDefinition
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
 				String[] dependsOn = mbd.getDependsOn();
+				// 处理dependsOn
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
 						if (isDependent(beanName, dep)) {
@@ -328,10 +332,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 				}
 
+				// 进入创建Bean的过程
 				// Create bean instance.
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							// lambda 表达式 其实就是一个匿名内部类 实现了ObjectFactory 接口
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {

@@ -91,8 +91,11 @@ class ConditionEvaluator {
 		}
 
 		List<Condition> conditions = new ArrayList<>();
+		//getConditionClasses 获取该类所有Conditional注解的对应condition子类集合
+
 		for (String[] conditionClasses : getConditionClasses(metadata)) {
 			for (String conditionClass : conditionClasses) {
+				// 反射创建所有condition类
 				Condition condition = getCondition(conditionClass, this.context.getClassLoader());
 				conditions.add(condition);
 			}
@@ -102,9 +105,13 @@ class ConditionEvaluator {
 
 		for (Condition condition : conditions) {
 			ConfigurationPhase requiredPhase = null;
+			// ConfigurationCondition是condition的子类
 			if (condition instanceof ConfigurationCondition) {
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
+			/**
+			 * 核心是#{@link Condition#matches}
+			 */
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {
 				return true;
 			}

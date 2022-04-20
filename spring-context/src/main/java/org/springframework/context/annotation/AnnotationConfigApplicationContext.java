@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.springframework.beans.factory.config.BeanDefinitionCustomizer;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.support.GenericApplicationContext;
@@ -66,8 +67,16 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext() {
 		StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create");
+
+		/**
+		 * reader 注册了一些实现BeanFactoryPostProcessor的Bean 用于解析各种注解配置
+		 * 进入其中
+		 * 最核心的就是#{@link AnnotationConfigUtils#registerAnnotationConfigProcessors(BeanDefinitionRegistry, Object)}
+		 */
 		this.reader = new AnnotatedBeanDefinitionReader(this);
+
 		createAnnotatedBeanDefReader.end();
+
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
@@ -88,8 +97,11 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * {@link Configuration @Configuration} classes
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
+		// 调用构造方法
 		this();
+		// 注册传入得配置类
 		register(componentClasses);
+
 		refresh();
 	}
 

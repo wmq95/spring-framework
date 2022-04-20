@@ -263,6 +263,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	@Override
 	public void setResourceLoader(@Nullable ResourceLoader resourceLoader) {
 		this.resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(resourceLoader);
+		// 使用asm 使用了缓存工厂
 		this.metadataReaderFactory = new CachingMetadataReaderFactory(resourceLoader);
 		this.componentsIndex = CandidateComponentsIndexLoader.loadIndex(this.resourcePatternResolver.getClassLoader());
 	}
